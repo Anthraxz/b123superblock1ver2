@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.0)</title>
+<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.1)</title>
 <style>
 :root{
   --bg:#f6f7f9;--panel:#ffffff;--panel2:#f1f3f6;--text:#1c2430;--muted:#5d6878;--line:#dde2e8;
@@ -28,6 +28,8 @@ header.top{position:sticky;top:0;z-index:30;background:var(--panel);border-botto
 nav.tabs{display:flex;gap:2px;flex-wrap:wrap;flex:1}
 nav.tabs button{background:none;border:none;padding:7px 11px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px}
 nav.tabs button:hover{background:var(--panel2);color:var(--text)}
+nav.tabs a.reportlink{display:inline-block;padding:7px 11px;border-radius:8px;color:var(--muted);font-size:14px;text-decoration:none;white-space:nowrap}
+nav.tabs a.reportlink:hover{background:var(--panel2);color:var(--text)}
 nav.tabs button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .iconbtn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px}
 main{max-width:1280px;margin:0 auto;padding:16px}
@@ -156,10 +158,10 @@ table.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:
   .brand{flex:1}
   nav.tabs{order:3;flex:0 0 100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   nav.tabs::-webkit-scrollbar{display:none}
-  nav.tabs button{white-space:nowrap;flex:0 0 auto}
+  nav.tabs button,nav.tabs a.reportlink{white-space:nowrap;flex:0 0 auto}
 }
 @media (max-width:560px){
-  nav.tabs button{padding:6px 8px;font-size:13px}
+  nav.tabs button,nav.tabs a.reportlink{padding:6px 8px;font-size:13px}
   .qstem{font-size:15.5px}
   input.inp[type=search]{min-width:0;width:100%}
 }
@@ -171,6 +173,7 @@ table.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:
 <header class="top">
   <div class="brand">MCQ Practice <small>· CDU-CM Level I</small></div>
   <nav class="tabs" id="tabs">
+    <a class="reportlink" href="https://forms.gle/HCyDSNGqXKk3UWrX6" target="_blank" rel="noopener noreferrer">Report/Suggestions</a>
     <button data-view="practice">Practice</button>
     <button data-view="bank">Question Bank</button>
     <button data-view="bookmarks">Bookmarked</button>
@@ -1009,9 +1012,13 @@ views.settings=(m)=>{
     <div class="row"><button class="btn" id="endSess" ${S.session?'':'disabled'}>End current session</button><button class="btn danger" id="resetAll">Reset ALL progress &amp; bookmarks</button></div>
   </div>
   <div class="card"><h3 style="margin-top:0">About this question bank</h3>
-      <p class="small" style="margin:6px 0"><b>Version 1.0</b> · built Nov 17, 2026</p>
+      <p class="small" style="margin:6px 0"><b>Version 1.1</b> · built Nov 17, 2026</p>
       <details class="small" style="margin-bottom:10px"><summary style="cursor:pointer"><b>What's new</b></summary>
-        <div style="margin-top:6px"><b>v1.0 · Nov 17, 2026</b>
+        <div style="margin-top:6px"><b>v1.1 · Nov 17, 2026</b>
+          <ul style="margin:4px 0 8px 18px;padding:0">
+            <li>New Report/Suggestions button beside Practice: opens a feedback form to report errors or send suggestions.</li>
+          </ul>
+          <b>v1.0 · Nov 17, 2026</b>
           <ul style="margin:4px 0 0 18px;padding:0">
             <li>2026 Block 1–3 bank merged with the 1st Super Block compilation (2018–2025) with per-option rationales.</li>
             <li>★ High-Yield: Recurrence by module, appearance bars and a minimum-appearances filter.</li>
