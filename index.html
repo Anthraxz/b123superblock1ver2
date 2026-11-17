@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Med School MCQ Practice — CDU-CM Level I Question Bank</title>
+<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.0)</title>
 <style>
 :root{
   --bg:#f6f7f9;--panel:#ffffff;--panel2:#f1f3f6;--text:#1c2430;--muted:#5d6878;--line:#dde2e8;
@@ -164,6 +164,7 @@ table.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:
   input.inp[type=search]{min-width:0;width:100%}
 }
 .recbar{height:6px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-top:6px}.recbar span{display:block;height:100%;background:var(--accent)}
+.chipsub{flex-basis:100%;width:100%;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -435,13 +436,19 @@ $('#hyBtn').onclick=()=>openDrawer('hy');
 /* ============================================================
    FILTER PANEL (shared)
    ============================================================ */
-function filterPanel(f,onChange,opts={}){
+function grpChips(key,vals,one){
+    if(key!=='topics'&&key!=='modules') return vals.map(one).join('');
+    const E=new Set(EXAMS.filter(e=>e.src==='ebs').map(e=>String(key==='topics'?e.topic:e.module)));
+    const a=vals.filter(v=>!E.has(String(v))), b=vals.filter(v=>E.has(String(v)));
+    return a.map(one).join('')+(b.length?`<span class="chipsub">EBS Trainer</span>`+b.map(one).join(''):'');
+  }
+  function filterPanel(f,onChange,opts={}){
   const fv=facetValues();
   const wrap=document.createElement('div');
   const chipGroup=(label,key,vals,fmt)=>{
     const counts=vals.map(v=>facetCount(f,key,v));
     return `<div class="fgroup"><label>${label} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${f[key].length?'· '+f[key].length+' selected':'· all'}</span></label><div class="chips">
-      ${vals.map((v,i)=>`<span class="chip ${f[key].includes(v)?'on':''}" data-k="${key}" data-v="${esc(v)}">${esc(fmt?fmt(v):v)}<span class="cnt">${counts[i]}</span></span>`).join('')}
+      ${grpChips(key,vals,v=>`<span class="chip ${f[key].includes(v)?'on':''}" data-k="${key}" data-v="${esc(v)}">${esc(fmt?fmt(v):v)}<span class="cnt">${counts[vals.indexOf(v)]}</span></span>`)}
       ${f[key].length?`<span class="chip" data-clear="${key}">Clear</span>`:''}</div></div>`;
   };
   const byBlock={};
@@ -674,6 +681,7 @@ function renderSession(m){
       <button class="btn sm" id="hyBtn2">★ High-yield</button>
       <button class="btn sm" id="setBtn">⚙ Shuffle &amp; session settings</button>
       <span class="grow"></span>
+      <button class="btn sm danger" id="endBtn2">■ End session</button>
       <button class="btn sm" id="newBtn">＋ New session</button>
     </div>
     <div class="card" id="qcard">
@@ -725,6 +733,7 @@ function renderSession(m){
   wrap.querySelector('#hyBtn2').onclick=()=>openDrawer('hy');
   wrap.querySelector('#setBtn').onclick=()=>openDrawer('sess');
   wrap.querySelector('#newBtn').onclick=()=>{PRACTICE_MODE='builder';render();};
+  wrap.querySelector('#endBtn2').onclick=async()=>{ if(await confirmBox('End session?','Your answers, bookmarks and progress stay saved. Only the current session is closed.','End session',true)){S.session=null;PRACTICE_MODE='builder';save();toast('Session ended.');render();window.scrollTo({top:0});} };
   wrap.querySelector('#navTog').onclick=()=>wrap.querySelector('#navpanel').classList.toggle('collapsed');
   const cur=wrap.querySelector('.nb.cur'); if(cur) cur.scrollIntoView({block:'nearest'});
 }
@@ -801,7 +810,7 @@ function drawHY(body){
   QS.forEach(q=>{if(GROUP_OF[q.id]){const e=EXMAP[q.exam];if(gs.some(x=>x.g===GROUP_OF[q.id]))modAgg[e.block+'-'+e.module].rep++;}});
   const modList=Object.values(modAgg).filter(a=>a.groups).sort((a,b)=>b.groups-a.groups||b.rep-a.rep);
   const modRows=modList.length?`<table class="tbl"><tr><th>Module</th><th>Repeated groups</th><th>Questions in groups</th><th>Most appearances</th><th style="min-width:120px">Share of module questions</th><th></th></tr>${modList.map(a=>`<tr><td>${a.b==='EBS'?'EBS · '+esc(a.t):'B'+a.b+' · M'+a.m+' — '+esc(a.t)}</td><td>${a.groups}</td><td>${a.rep} / ${a.n}</td><td>${a.max}</td><td><div class="recbar"><span style="width:${Math.min(100,100*a.rep/a.n)}%"></span></div></td><td><button class="btn sm" data-modf="${a.b}-${a.m}">Filter</button></td></tr>`).join('')}</table>`:'<div class="small muted">No repeated groups match these filters.</div>';
-  const chip=(label,key,vals,fmt)=>`<div class="fgroup"><label>${label}</label><div class="chips">${vals.map(v=>`<span class="chip ${f[key].includes(v)?'on':''}" data-hk="${key}" data-v="${esc(v)}">${esc(fmt?fmt(v):v)}</span>`).join('')}</div></div>`;
+  const chip=(label,key,vals,fmt)=>`<div class="fgroup"><label>${label}</label><div class="chips">${grpChips(key,vals,v=>`<span class="chip ${f[key].includes(v)?'on':''}" data-hk="${key}" data-v="${esc(v)}">${esc(fmt?fmt(v):v)}</span>`)}</div></div>`;
   const card=x=>{
     const rep=x.occ[0];
     const open=hyOpen[x.g.id];
@@ -1000,6 +1009,17 @@ views.settings=(m)=>{
     <div class="row"><button class="btn" id="endSess" ${S.session?'':'disabled'}>End current session</button><button class="btn danger" id="resetAll">Reset ALL progress &amp; bookmarks</button></div>
   </div>
   <div class="card"><h3 style="margin-top:0">About this question bank</h3>
+      <p class="small" style="margin:6px 0"><b>Version 1.0</b> · built Nov 17, 2026</p>
+      <details class="small" style="margin-bottom:10px"><summary style="cursor:pointer"><b>What's new</b></summary>
+        <div style="margin-top:6px"><b>v1.0 · Nov 17, 2026</b>
+          <ul style="margin:4px 0 0 18px;padding:0">
+            <li>2026 Block 1–3 bank merged with the 1st Super Block compilation (2018–2025) with per-option rationales.</li>
+            <li>★ High-Yield: Recurrence by module, appearance bars and a minimum-appearances filter.</li>
+            <li>Added SUPERBLOCKS.pdf (332 recalled 2026 items) and the ★ SUPERBLOCKS only button.</li>
+            <li>Added the EBS Trainer file (550 questions with rationales), the ★ EBS only button, accepted second answers, and an EBS Trainer sub-group in the Topic and Module filters.</li>
+            <li>End session button during practice.</li>
+          </ul></div>
+      </details>
     <p class="small">${EMB.exams.length} examinations · ${EMB.questions.length} questions: 590 from the 2026 Block 1–3 answer-key PDFs, 332 from SUPERBLOCKS.pdf (2026 recalled quizzes; some partly recalled items are unscored) 550 from the EBS Trainer file (6 decks with written rationales) and ${EMB.questions.length-1472} from the 1st Super Block compilation (2018–2025, with per-option rationales where available). Explanations and rationales were written for study support; they reference standard textbooks by title and author only — editions and page numbers are deliberately omitted because they could not be verified. Original question wording, choices and answer keys are preserved exactly; possible problems are flagged, never silently corrected.</p></div>`;
   m.querySelectorAll('[data-th]').forEach(c=>c.onclick=()=>{st.theme=c.dataset.th||null;applyTheme();save();render();});
   m.querySelector('#snd').onchange=e=>{st.sound=e.target.checked;save();};
