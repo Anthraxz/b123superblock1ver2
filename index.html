@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.3.1)</title>
+<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.4)</title>
 <style>
 :root{
   --bg:#f6f7f9;--panel:#ffffff;--panel2:#f1f3f6;--text:#1c2430;--muted:#5d6878;--line:#dde2e8;
@@ -43,6 +43,9 @@ h3{font-size:15px;margin:14px 0 8px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 html[data-theme="dark"] .btn.primary{color:#0e1620}
 .btn.primary:hover{filter:brightness(1.07)}
+.chip.clr{color:var(--bad);border-color:var(--bad);font-weight:600}
+.chip.clr:hover{background:var(--bad-soft)}
+.clearbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.sm{padding:4px 9px;font-size:13px}
@@ -451,8 +454,9 @@ $('#hyBtn').onclick=()=>openDrawer('hy');
    FILTER PANEL (shared)
    ============================================================ */
 function grpChips(key,vals,one){
-    if(key!=='modules') return vals.map(one).join('');
+    if(key!=='topics'&&key!=='modules') return vals.map(one).join('');
     const E=new Set(EXAMS.filter(e=>e.src==='ebs').map(e=>String(key==='topics'?e.topic:e.module)));
+    if(key==='topics') return vals.filter(v=>!E.has(String(v))).map(one).join('');
     const a=vals.filter(v=>!E.has(String(v))), b=vals.filter(v=>E.has(String(v)));
     return a.map(one).join('')+(b.length?`<span class="chipsub">EBS Trainer</span>`+b.map(one).join(''):'');
   }
@@ -460,26 +464,31 @@ function grpChips(key,vals,one){
   if(!f.subjects) f.subjects=[];
   const fv=facetValues();
   const wrap=document.createElement('div');
-  const chipGroup=(label,key,vals,fmt)=>{
+  const subjBreak=t=>{const b={course:0,sb:0,ebs:0};QS.forEach(q=>{if(!(q.tags||[]).includes(t))return;const e=EXMAP[q.exam]||{};if(e.src==='ebs')b.ebs++;else if(e.src==='superblocks')b.sb++;else b.course++;});return b;};
+  const chipGroup=(label,key,vals,fmt,hint)=>{
     const counts=vals.map(v=>facetCount(f,key,v));
+    const tip=v=>{if(key!=='subjects')return '';const b=subjBreak(v);return ` title="${esc((SUBJ[v]||v)+': '+(b.course+b.sb+b.ebs)+' in total = '+b.course+' course exams + '+b.sb+' SUPERBLOCKS + '+b.ebs+' EBS decks (counts shown on the chips also follow the filters)')}"`;};
     return `<div class="fgroup"><label>${label} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${f[key].length?'· '+f[key].length+' selected':'· all'}</span></label><div class="chips">
-      ${grpChips(key,vals,v=>`<span class="chip ${f[key].includes(v)?'on':''}" data-k="${key}" data-v="${esc(v)}">${esc(fmt?fmt(v):v)}<span class="cnt">${counts[vals.indexOf(v)]}</span></span>`)}
-      ${f[key].length?`<span class="chip" data-clear="${key}">Clear</span>`:''}</div></div>`;
+      ${grpChips(key,vals,v=>`<span class="chip ${f[key].includes(v)?'on':''}" data-k="${key}" data-v="${esc(v)}"${tip(v)}>${esc(fmt?fmt(v):v)}<span class="cnt">${counts[vals.indexOf(v)]}</span></span>`)}
+      ${f[key].length?`<span class="chip clr" data-clear="${key}">✕ Clear</span>`:''}</div>${hint?`<div class="small muted" style="margin-top:4px">${hint}</div>`:''}</div>`;
   };
+  const subjHint=()=>{const parts=fv.subjects.map(t=>{const b=subjBreak(t);return `<b>${esc(SUBJ[t]||t)}</b> = ${b.course} course-exam + ${b.sb} SUPERBLOCKS + ${b.ebs} EBS-deck questions`;});return parts.join(' · ')+'. Includes related questions from other exams. Counts leave out unkeyed items when "Include discarded / unkeyed" below is off.'+(f.subjects.length&&f.topics.length?'<div class="notice warn small" style="margin-top:6px">Subject and Exam topic are both selected, so only questions matching both are included.</div>':'');};
+  const nSel=['subjects','years','blocks','modules','quizzes','topics','exams'].filter(k=>(f[k]||[]).length).length+((f.only&&f.only!=='all')?1:0)+(f.minRep?1:0)+(f.search?1:0)+(f.sortRep?1:0)+(f.src?1:0)+(f.includeDiscarded===false?1:0);
   const byBlock={};
   EXAMS.forEach(e=>{(byBlock[e.block]=byBlock[e.block]||[]).push(e);});
   wrap.innerHTML=`
     ${opts.search?`<div class="fgroup"><label>Keyword search (question wording and answer choices)</label><input type="search" class="inp" id="fsearch" placeholder="e.g. Wallerian, thymus, Ottawa Charter" value="${esc(f.search)}" style="width:100%"></div>`:''}
-    ${chipGroup('Subject','subjects',fv.subjects,v=>SUBJ[v])}
+    ${nSel?`<div class="clearbar"><button class="btn danger" id="clearAll">✕ Clear all filters</button><span class="small muted">${nSel} filter${nSel===1?'':'s'} active${f.includeDiscarded===false?' (includes: unkeyed items hidden)':''}</span></div>`:''}
+    ${(opts.showSubject!==false||f.subjects.length)?chipGroup('Subject (all sources)','subjects',fv.subjects,v=>SUBJ[v],subjHint()):''}
     ${chipGroup('Academic year','years',fv.years)}
     ${chipGroup('Block','blocks',fv.blocks,v=>/^\d+$/.test(v)?'Block '+v:v)}
     ${chipGroup('Module','modules',fv.modules,v=>/^\d+$/.test(v)?'Module '+v:v)}
     ${chipGroup('Quiz number','quizzes',fv.quizzes,v=>'Quiz '+v)}
-    ${chipGroup('Examination topic','topics',fv.topics)}
+    ${chipGroup('Exam topic (course modules)','topics',fv.topics,null,'Course exam topics only. EBS decks are under Block and Module.')}
     <div class="fgroup"><label>Individual examinations <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${f.exams.length?'· '+f.exams.length+' selected':'· all'}</span></label>
       <div class="examlist">${Object.keys(byBlock).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true})).map(b=>`<div class="small muted" style="padding:4px 6px;font-weight:600">${/^\d+$/.test(b)?'Block '+esc(b):esc(b)}</div>`+byBlock[b].map(e=>`
         <label><input type="checkbox" data-exam="${esc(e.id)}" ${f.exams.includes(e.id)?'checked':''}><span>${esc(examShort(e))} — ${esc(e.topic)} <span class="muted small">(${e.year}, ${esc(fmtDate(e.date))}, ${QS.filter(q=>q.exam===e.id).length} q)</span>${e.source==='imported'?' <span class="badge acc">imported</span>':''}</span></label>`).join('')).join('')}</div>
-      ${f.exams.length?'<div style="margin-top:6px"><span class="chip" data-clear="exams">Clear exam selection</span></div>':''}</div>
+      ${f.exams.length?'<div style="margin-top:6px"><span class="chip clr" data-clear="exams">✕ Clear exam selection</span></div>':''}</div>
     ${opts.only!==false?`<div class="fgroup"><label>Question subset</label><div class="chips">
       ${[['all','All questions'],['bookmarked','Bookmarked only'],['incorrect','Incorrect only'],['repeated','Repeated only'],['unanswered','Unanswered only'],['flagged','Flagged items only']].map(([k,l])=>`<span class="chip ${f.only===k?'on':''}" data-only="${k}">${l}</span>`).join('')}
     </div></div>`:''}
@@ -487,6 +496,7 @@ function grpChips(key,vals,one){
     <div class="fgroup"><label>Sort order</label><select class="inp" id="fsort" style="max-width:260px"><option value="" ${!f.sortRep?'selected':''}>Default order</option><option value="desc" ${f.sortRep==='desc'?'selected':''}>Most repeated first</option><option value="asc" ${f.sortRep==='asc'?'selected':''}>Fewest repeats first</option></select></div>
     <label class="switch small"><input type="checkbox" id="fdisc" ${f.includeDiscarded?'checked':''}> Include discarded / crossed-out / unkeyed items (${QS.filter(q=>q.discarded||q.answer==null).length} in bank)</label>`;
   wrap.querySelectorAll('[data-k]').forEach(c=>c.onclick=()=>{const k=c.dataset.k,v=c.dataset.v;const i=f[k].indexOf(v);if(i>=0)f[k].splice(i,1);else f[k].push(v);onChange();});
+  const ca=wrap.querySelector('#clearAll'); if(ca) ca.onclick=()=>{Object.assign(f,emptyFilters());onChange();};
   wrap.querySelectorAll('[data-clear]').forEach(c=>c.onclick=()=>{f[c.dataset.clear]=[];onChange();});
   wrap.querySelectorAll('[data-exam]').forEach(c=>c.onchange=()=>{const v=c.dataset.exam;const i=f.exams.indexOf(v);if(c.checked&&i<0)f.exams.push(v);if(!c.checked&&i>=0)f.exams.splice(i,1);onChange();});
   wrap.querySelectorAll('[data-only]').forEach(c=>c.onclick=()=>{f.only=c.dataset.only;onChange();});
@@ -564,6 +574,7 @@ function selectAnswer(qid,origIdx){
    PRACTICE VIEW
    ============================================================ */
 let builderF=null;
+let BMODE='';
 views.practice=(m)=>{
   if(S.session && sessionQs().length && PRACTICE_MODE==='session') return renderSession(m);
   renderBuilder(m);
@@ -612,8 +623,11 @@ function renderBuilder(m){
   fpHost.appendChild(filterPanel(f,refresh,{search:false}));
   const lw=card.querySelector('#lenWarn');
   if(st.length!=='all' && parseInt(st.length)>pool.length && pool.length) lw.innerHTML=`<div class="notice warn small">Only ${pool.length} question(s) match — the session will use all available questions.</div>`;
+  card.querySelectorAll('[data-mode]').forEach(c=>{ if(c.dataset.mode===BMODE) c.classList.add('on'); });
   card.querySelectorAll('[data-mode]').forEach(c=>c.onclick=()=>{
     const md=c.dataset.mode;
+    if(BMODE===md){ BMODE=''; render(); return; }
+    BMODE=md;
     Object.assign(f,emptyFilters(),{includeDiscarded:f.includeDiscarded,src:f.src});
     S.builder=f; save(); render();
     const hint=$('#modeHint');
@@ -728,6 +742,7 @@ function renderSession(m){
       <div class="row" style="margin-top:14px">
         <button class="btn" id="prevBtn" ${s.cur===0?'disabled':''}>← Previous</button>
         <button class="btn" id="bmBtn">${S.bookmarks[qid]?'★ Bookmarked':'☆ Bookmark'}</button>
+        <button class="btn" id="rptBtn" title="Report an error or send a suggestion about this question">⚑ Report this question</button>
         ${ua!=null?'<button class="btn sm" id="clrBtn" title="Clear my answer for this question">Clear answer</button>':''}
         <span class="grow"></span>
         <button class="btn primary" id="nextBtn" ${s.cur>=order.length-1?'disabled':''}>Next →</button>
@@ -747,6 +762,7 @@ function renderSession(m){
   wrap.querySelector('#prevBtn').onclick=()=>{s.cur--;save();render();};
   wrap.querySelector('#nextBtn').onclick=()=>{s.cur++;save();render();};
   wrap.querySelector('#bmBtn').onclick=()=>{toggleBm(qid);render();};
+  wrap.querySelector('#rptBtn').onclick=()=>reportQuestion(q);
   const cb=wrap.querySelector('#clrBtn'); if(cb) cb.onclick=()=>{delete S.answers[qid];save();render();};
   wrap.querySelectorAll('.nb').forEach(b=>b.onclick=()=>{s.cur=+b.dataset.i;save();render();});
   wrap.querySelector('#sumBtn').onclick=()=>openDrawer('summary');
@@ -756,6 +772,16 @@ function renderSession(m){
   wrap.querySelector('#endBtn2').onclick=async()=>{ if(await confirmBox('End session?','Your answers, bookmarks and progress stay saved. Only the current session is closed.','End session',true)){S.session=null;PRACTICE_MODE='builder';save();toast('Session ended.');render();window.scrollTo({top:0});} };
   wrap.querySelector('#navTog').onclick=()=>wrap.querySelector('#navpanel').classList.toggle('collapsed');
   const cur=wrap.querySelector('.nb.cur'); if(cur) cur.scrollIntoView({block:'nearest'});
+}
+function reportQuestion(q){
+  const e=EXMAP[q.exam]||{};
+  const key=q.answer==null?'unkeyed':(q.answerLabel||'ABCDE'[q.answer])+(q.alt!=null?' / '+'ABCDE'[q.alt]:'');
+  const txt=['Question ID: '+q.id,'Exam: '+examShort(e)+' - '+(e.topic||''),'Year: '+(e.year??''),'Item #: '+q.num+(q.page!=null?' (p. '+q.page+')':''),'Source file: '+(e.file||''),'Answer key shown: '+key,'Question: '+String(q.stem).slice(0,200)+(String(q.stem).length>200?'...':''),'','My report / suggestion: '].join('\n');
+  window.open('https://forms.gle/HCyDSNGqXKk3UWrX6','_blank','noopener');
+  let ok=false;
+  try{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); ok=document.execCommand('copy'); ta.remove(); }catch(_){}
+  if(!ok && navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>toast('Question details copied. Paste them into the form.'),()=>{});
+  toast(ok?'Question details copied. Paste them into the form.':'Form opened. Mention question ID '+q.id+'.');
 }
 function toggleBm(id){ if(S.bookmarks[id]) delete S.bookmarks[id]; else S.bookmarks[id]=Date.now(); save(); }
 document.addEventListener('keydown',ev=>{
@@ -1029,9 +1055,19 @@ views.settings=(m)=>{
     <div class="row"><button class="btn" id="endSess" ${S.session?'':'disabled'}>End current session</button><button class="btn danger" id="resetAll">Reset ALL progress &amp; bookmarks</button></div>
   </div>
   <div class="card"><h3 style="margin-top:0">About this question bank</h3>
-      <p class="small" style="margin:6px 0"><b>Version 1.3.1</b> · built Nov 19, 2026</p>
+      <p class="small" style="margin:6px 0"><b>Version 1.4</b> · built Nov 19, 2026</p>
       <details class="small" style="margin-bottom:10px"><summary style="cursor:pointer"><b>What's new</b></summary>
-        <div style="margin-top:6px"><b>v1.3.1 · Nov 19, 2026</b>
+        <div style="margin-top:6px"><b>v1.4 · Nov 19, 2026</b>
+          <ul style="margin:4px 0 8px 18px;padding:0">
+            <li>"⚑ Report this question" button on every practice question: opens the feedback form and copies the question ID, exam, item number and answer key to your clipboard so you can paste them in.</li>
+            <li>Visible red "Clear" buttons: one on each filter row once something is selected, plus a "Clear all filters" button at the top of the filters (it also appears when ★ only or "Include discarded / unkeyed" is changing the count, and resets those too).</li>
+            <li>Subject row renamed "Subject (all sources)" with a visible breakdown (course exams + SUPERBLOCKS + EBS decks) and a tooltip on each chip; it is always visible.</li>
+            <li>Practice mode buttons (Entire question bank, Individual examination, Topic, Academic year, Custom combination) can now be clicked again to deselect; your filters are kept.</li>
+            <li>Topic row renamed "Exam topic (course modules)" with a short hint; a warning appears if Subject and Exam topic are both selected.</li>
+            <li>Counts explained: chip counts leave out unkeyed items when "Include discarded / unkeyed" is off.</li>
+            <li>Examination topic filter tidied: it now lists only the course topics (alphabetical). EBS decks are chosen from the Block and Module filters instead of being mixed in.</li>
+          </ul>
+          <b>v1.3.1 · Nov 19, 2026</b>
           <ul style="margin:4px 0 8px 18px;padding:0">
             <li>Fixed an error that stopped the Manage Bank screen from opening.</li>
           </ul>
