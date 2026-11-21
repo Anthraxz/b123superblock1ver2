@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Med School MCQ Practice — CDU-CM Level I Question Bank (v1.4)</title>
+<title>Med School MCQ Practice — CDU-CM Level I · Block 1, 2, 3 (v1.5.1)</title>
 <style>
 :root{
   --bg:#f6f7f9;--panel:#ffffff;--panel2:#f1f3f6;--text:#1c2430;--muted:#5d6878;--line:#dde2e8;
@@ -171,12 +171,19 @@ table.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:
 .recbar{height:6px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-top:6px}.recbar span{display:block;height:100%;background:var(--accent)}
 .chipsub{flex-basis:100%;width:100%;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .badge.subj{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+.obmenu{position:fixed;z-index:60;min-width:210px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);padding:6px}
+.obmenu[hidden]{display:none}
+.obmenu a{display:block;padding:8px 10px;border-radius:8px;color:var(--text);text-decoration:none;font-size:14px;white-space:nowrap}
+.obmenu a:hover,.obmenu a:focus{background:var(--panel2);outline:none}
+.obmenu a .ext{color:var(--muted);margin-left:6px}
+#obBtn[aria-expanded="true"]{background:var(--panel2);color:var(--text)}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand">MCQ Practice <small>· CDU-CM Level I</small></div>
+  <div class="brand">MCQ Practice <small>· CDU-CM Level I · Block 1, 2, 3</small></div>
   <nav class="tabs" id="tabs">
+    <button type="button" id="obBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="obMenu">Other Banks ▾</button>
     <a class="reportlink" href="https://forms.gle/HCyDSNGqXKk3UWrX6" target="_blank" rel="noopener noreferrer">Report/Suggestions</a>
     <button data-view="practice">Practice</button>
     <button data-view="bank">Question Bank</button>
@@ -1055,9 +1062,17 @@ views.settings=(m)=>{
     <div class="row"><button class="btn" id="endSess" ${S.session?'':'disabled'}>End current session</button><button class="btn danger" id="resetAll">Reset ALL progress &amp; bookmarks</button></div>
   </div>
   <div class="card"><h3 style="margin-top:0">About this question bank</h3>
-      <p class="small" style="margin:6px 0"><b>Version 1.4</b> · built Nov 19, 2026</p>
+      <p class="small" style="margin:6px 0"><b>Version 1.5.1</b> · built Nov 21, 2026</p>
       <details class="small" style="margin-bottom:10px"><summary style="cursor:pointer"><b>What's new</b></summary>
-        <div style="margin-top:6px"><b>v1.4 · Nov 19, 2026</b>
+        <div style="margin-top:6px"><b>v1.5.1 · Nov 21, 2026</b>
+          <ul style="margin:4px 0 8px 18px;padding:0">
+            <li>Header now reads "CDU-CM Level I · Block 1, 2, 3" so it is clear which blocks this bank covers.</li>
+          </ul>
+          <b>v1.5 · Nov 21, 2026</b>
+          <ul style="margin:4px 0 8px 18px;padding:0">
+            <li>New "Other Banks ▾" menu beside Report/Suggestions, linking to other question banks. First entry: Block 4–6 Super Block (opens in a new tab).</li>
+          </ul>
+          <b>v1.4 · Nov 19, 2026</b>
           <ul style="margin:4px 0 8px 18px;padding:0">
             <li>"⚑ Report this question" button on every practice question: opens the feedback form and copies the question ID, exam, item number and answer key to your clipboard so you can paste them in.</li>
             <li>Visible red "Clear" buttons: one on each filter row once something is selected, plus a "Clear all filters" button at the top of the filters (it also appears when ★ only or "Include discarded / unkeyed" is changing the count, and resets those too).</li>
@@ -1362,6 +1377,38 @@ rebuildBank();
 if(S.session && !sessionQs().length) S.session=null;
 PRACTICE_MODE = S.session?'session':'builder';
 go('practice');
+</script>
+<script>
+/* ===== Other Banks menu =====
+   To add another bank, add one line to OTHER_BANKS: {label:'Name shown in the menu', url:'https://...'} */
+const OTHER_BANKS=[
+  {label:'Block 4–6 Super Block', url:'https://anthraxz.github.io/b456superblock2/'}
+];
+(function(){
+  const btn=document.getElementById('obBtn'); if(!btn) return;
+  if(!OTHER_BANKS.length){ btn.remove(); return; }
+  const menu=document.createElement('div'); menu.id='obMenu'; menu.className='obmenu'; menu.setAttribute('role','menu'); menu.hidden=true;
+  OTHER_BANKS.forEach(b=>{
+    const a=document.createElement('a'); a.setAttribute('role','menuitem'); a.href=b.url; a.target='_blank'; a.rel='noopener noreferrer';
+    a.appendChild(document.createTextNode(b.label)); const x=document.createElement('span'); x.className='ext'; x.textContent='↗'; a.appendChild(x);
+    a.addEventListener('click',()=>close()); menu.appendChild(a);
+  });
+  document.body.appendChild(menu);
+  function place(){ const r=btn.getBoundingClientRect(); const w=menu.offsetWidth||220; menu.style.top=(r.bottom+4)+'px'; menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px'; }
+  function open(){ menu.hidden=false; place(); btn.setAttribute('aria-expanded','true'); }
+  function close(focusBtn){ if(menu.hidden) return; menu.hidden=true; btn.setAttribute('aria-expanded','false'); if(focusBtn) btn.focus(); }
+  btn.onclick=e=>{ e.stopPropagation(); menu.hidden?open():close(); };
+  btn.addEventListener('keydown',e=>{ if(e.key==='ArrowDown'){ e.preventDefault(); if(menu.hidden) open(); const f=menu.querySelector('a'); f&&f.focus(); } });
+  menu.addEventListener('keydown',e=>{
+    const items=[...menu.querySelectorAll('a')]; const i=items.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); items[(i+1)%items.length].focus(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); items[(i-1+items.length)%items.length].focus(); }
+  });
+  document.addEventListener('click',e=>{ if(!menu.contains(e.target)&&e.target!==btn) close(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(true); });
+  window.addEventListener('resize',()=>close());
+  document.getElementById('tabs').addEventListener('scroll',()=>close());
+})();
 </script>
 </body>
 </html>
